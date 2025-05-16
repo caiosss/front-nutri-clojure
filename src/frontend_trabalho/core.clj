@@ -48,12 +48,6 @@
         (select-food data))
       (println "Nenhum alimento encontrado."))))
 
-(defn get-exercise-data []
-  (let [url (str "http://localhost:3000/exercicios")
-        response (client/get url {:as :json})]
-        (if (= 200 (:status response))
-        )))
-
 (defn menu []
   (println "Bem-vindo ao UniNutri!")
   (println "1. Registrar Alimentacao")
@@ -76,11 +70,6 @@
       (do
         (println "Registrar Exercicio")
         (flush)
-        (let [exercise-name (read)]
-          (print "Digite a duração em minutos: ")
-          (flush)
-          (let [duration (read)]
-            ))
         (recur))
 
       (= option 3)
