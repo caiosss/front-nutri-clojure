@@ -115,7 +115,8 @@
   (println "2. Registrar Exercicio") 
   (println "3. Ver Alimentos Salvos")
   (println "4. Ver Exercicios Salvos")
-  (println "5. Sair")
+  (println "5. Ver Total de Calorias Consumidas e Gastas")
+  (println "6. Sair")
   (print "Escolha uma opcao: ")
   (flush)
   (let [option-str (read-line)
@@ -178,6 +179,19 @@
         (recur))
       
       (= option 5)
+      (do 
+        (println "Total de Calorias Consumidas e Gastas")
+        (try
+          (let [response (client/get "http://localhost:3000/calorias-total" {:as :json})]
+            (if (= 200 (:status response))
+              (let [{:keys [total-calorias]} (:body response)]
+                (print (str "Total de calorias consumidas: " total-calorias " kcal.")))
+              (println "Erro ao buscar total de calorias.")))
+          (catch Exception e
+            (println "Erro ao conectar com o servidor.")))
+        (recur))
+      
+      (= option 6)
       (println "Saindo do programa...")
       
       :else
