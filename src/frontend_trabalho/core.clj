@@ -109,6 +109,19 @@
         (select-exercise data exercise-name))
       (println "Nenhum exercicio encontrado ou erro na busca."))))
 
+(defn display-calorie-balance [total-calorias]
+  (cond
+    (< total-calorias 0)
+    (do
+      (println (str "Parabens! Voce gastou mais calorias do que consumiu."))
+      (println (str "Voce ja gastou " (Math/abs total-calorias) " calorias a mais do que consumiu.")))
+    
+    (> total-calorias 0)
+    (println (str "Voce consumiu mais calorias do que gastou: " total-calorias " kcal."))
+    
+    (= total-calorias 0)
+    (println "Perfeitamente equilibrado. Como deve ser. Calorias consumidas = calorias gastas. ou seja 0")))
+
 (defn menu []
   (println "Bem-vindo ao UniNutri!")
   (println "1. Registrar Alimentacao")
@@ -185,7 +198,7 @@
           (let [response (client/get "http://localhost:3000/calorias-total" {:as :json})]
             (if (= 200 (:status response))
               (let [{:keys [total-calorias]} (:body response)]
-                (print (str "Total de calorias consumidas: " total-calorias " kcal.")))
+                (display-calorie-balance total-calorias))
               (println "Erro ao buscar total de calorias.")))
           (catch Exception e
             (println "Erro ao conectar com o servidor.")))
