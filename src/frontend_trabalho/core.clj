@@ -21,8 +21,8 @@
   (let [url "http://localhost:3000/registro-alimentacao"
         body (json/generate-string {:alimento food-name :calorias calories})
         response (client/post url {:body body
-        :headers {"Content-Type" "application/json"
-        "Accept" "application/json"}})]
+                                   :headers {"Content-Type" "application/json"
+                                             "Accept" "application/json"}})]
     (if (= 200 (:status response))
       (println "Alimento registrado com sucesso!")
       (println "Erro ao registrar alimento!"))))
@@ -123,7 +123,7 @@
     (println "Perfeitamente equilibrado. Como deve ser. Calorias consumidas = calorias gastas. ou seja 0")))
 
 (defn menu []
-  (println "Bem-vindo ao UniNutri!")
+  (println "0. Cadastrar Usuario (obrigatório antes de usar o sistema)")
   (println "1. Registrar Alimentacao")
   (println "2. Registrar Exercicio") 
   (println "3. Ver Alimentos Salvos")
@@ -133,27 +133,52 @@
   (print "Escolha uma opcao: ")
   (flush)
   (let [option-str (read-line)
-      option (try (Integer/parseInt option-str) (catch Exception _ 0))]
+        option (try (Integer/parseInt option-str) (catch Exception _ -1))]
+    
     (cond
+      (= option 0)
+      (do
+        (println "Cadastro de Usuario")
+        (print "Digite o nome do usuario: ") (flush)
+        (let [user-name (read-line)]
+          (print "Digite o email do usuario: ") (flush)
+          (let [user-email (read-line)]
+            (print "Digite a senha do usuario: ") (flush)
+            (let [user-password (read-line)]
+              (when (and (not (empty? user-name))
+                         (not (empty? user-email))
+                         (not (empty? user-password)))
+                (let [response (client/post "http://localhost:3000/registro-usuario"
+                                            {:body (json/generate-string {:nome user-name :email user-email :senha user-password})
+                                             :headers {"Content-Type" "application/json"
+                                                       "Accept" "application/json"}})]
+                  (if (= 200 (:status response))
+                    (println "Usuario cadastrado com sucesso!")
+                    (println "Erro ao cadastrar usuario."))))))
+          (println "Pressione Enter para continuar...") (read-line)
+          (recur)))
+
       (= option 1)
       (do
         (println "Registrar Alimentacao")
-        (print "Digite o nome do alimento: ")
-        (flush)
-        (let [food-name (read)]
-          (get-food-data food-name))
+        (print "Digite o nome do alimento: ") (flush)
+        (let [food-name (read-line)]
+          (when (not (empty? food-name))
+            (get-food-data food-name)))
+        (println "Pressione Enter para continuar...") (read-line)
         (recur))
-      
+
       (= option 2)
       (do
         (println "Registrar Exercicio")
-        (print "Digite o nome do exercicio: ")
-        (flush)
+        (print "Digite o nome do exercicio: ") (flush)
         (let [exercise-name (read-line)]
           (when (not (empty? exercise-name))
             (get-exercise-data exercise-name)))
+        (println "Pressione Enter para continuar...") (read-line)
+        (println " ")
         (recur))
-      
+
       (= option 3)
       (do
         (println "Alimentos Salvos:")
@@ -163,14 +188,16 @@
               (let [foods (:body response)]
                 (if (empty? foods)
                   (println "Nenhum alimento salvo ainda.")
-                  (run! (fn [food] 
-                        (println (str "- " (:alimento food) ": " (:calorias food) " calorias")))
+                  (run! (fn [food]
+                          (println (str "- " (:alimento food) ": " (:calorias food) " calorias")))
                         foods)))
               (println "Erro ao buscar alimentos salvos.")))
           (catch Exception e
             (println "Erro ao conectar com o servidor.")))
+        (println "Pressione Enter para continuar...") (read-line)
+        (println " ")
         (recur))
-      
+
       (= option 4)
       (do
         (println "Exercicios Salvos:")
@@ -181,18 +208,19 @@
                 (if (empty? exercises)
                   (println "Nenhum exercicio salvo ainda.")
                   (run! (fn [exercise]
-                          (println (str "- " (:nome exercise) 
-                                   " (original: " (:nome-original exercise) "): "
-                                  (:total-calorias exercise) " calorias totais, "
-                                  (:calorias-por-hora exercise) " cal/hora")))
+                          (println (str "- " (:nome exercise)
+                                        " (original: " (:nome-original exercise) "): "
+                                        (:total-calorias exercise) " calorias totais, "
+                                        (:calorias-por-hora exercise) " cal/hora")))
                         exercises)))
               (println "Erro ao buscar exercicios salvos.")))
           (catch Exception e
             (println "Erro ao conectar com o servidor.")))
+        (println "Pressione Enter para continuar...") (read-line)
         (recur))
-      
+
       (= option 5)
-      (do 
+      (do
         (println "Total de Calorias Consumidas e Gastas")
         (try
           (let [response (client/get "http://localhost:3000/calorias-total" {:as :json})]
@@ -202,17 +230,20 @@
               (println "Erro ao buscar total de calorias.")))
           (catch Exception e
             (println "Erro ao conectar com o servidor.")))
+        (println "Pressione Enter para continuar...") (read-line)
         (recur))
-      
+
       (= option 6)
       (println "Saindo do programa...")
-      
+
       :else
       (do
         (println "Opcao invalida!")
+        (println "Pressione Enter para continuar...") (read-line)
         (recur)))))
 
 (defn -main
   "UniNutri - Sistema de registro de alimentacao e exercicios"
   [& args]
+  (println "Bem-vindo ao UniNutri! - Sistema de registro de alimentacao e exercicios")
   (menu))
