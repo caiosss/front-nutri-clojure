@@ -48,10 +48,9 @@
         (select-food data))
       (println "Nenhum alimento encontrado."))))
 
-(defn fetch-exercise-data [exercise-name weight duration]
+(defn fetch-exercise-data [exercise-name duration]
   (let [url (str "http://localhost:3000/api/exercicios/" exercise-name)
         params (cond-> {}
-        weight (assoc :weight weight)
         duration (assoc :duration duration))
         response (client/get url {:query-params params :as :json})]
     (if (= 200 (:status response))
@@ -89,20 +88,17 @@
         (save-exercise-data selected original-name))
       (println "Opcao invalida."))))
 
-(defn get-exercise-info []
-  (print "Digite o peso (em libras, deixe vazio para 160): ")
-  (flush)
-  (let [weight-input (read-line)]
+
+  (defn get-exercise-info []
     (print "Digite a duracao em minutos (deixe vazio para 60): ")
     (flush)
     (let [duration-input (read-line)
-          weight (if (empty? weight-input) nil (Integer/parseInt weight-input))
-          duration (if (empty? duration-input) nil (Integer/parseInt duration-input))]
-      [weight duration])))
+      duration (if (empty? duration-input) nil (Integer/parseInt duration-input))]
+        [nil duration]))
 
 (defn get-exercise-data [exercise-name]
-  (let [[weight duration] (get-exercise-info)
-        data (fetch-exercise-data exercise-name weight duration)]
+  (let [[_ duration] (get-exercise-info)
+        data (fetch-exercise-data exercise-name duration)]
     (if (and (sequential? data) (not (empty? data)))
       (do
         (print-exercise-options data)
@@ -145,17 +141,35 @@
           (let [user-email (read-line)]
             (print "Digite a senha do usuario: ") (flush)
             (let [user-password (read-line)]
-              (when (and (not (empty? user-name))
-                         (not (empty? user-email))
-                         (not (empty? user-password)))
-                (let [response (client/post "http://localhost:3000/registro-usuario"
-                                            {:body (json/generate-string {:nome user-name :email user-email :senha user-password})
-                                             :headers {"Content-Type" "application/json"
-                                                       "Accept" "application/json"}})]
-                  (if (= 200 (:status response))
-                    (println "Usuario cadastrado com sucesso!")
-                    (println "Erro ao cadastrar usuario."))))))
-          (println "Pressione Enter para continuar...") (read-line)
+              (print "Digite o peso (libras): ") (flush)
+              (let [user-weight (read-line)]
+                (print "Digite a altura (cm): ") (flush)
+                (let [user-height (read-line)]
+                  (print "Digite o sexo (M/F): ") (flush)
+                  (let [user-sex (read-line)]
+                    (when (and (not (empty? user-name))
+                               (not (empty? user-email))
+                               (not (empty? user-password))
+                               (not (empty? user-weight))
+                               (not (empty? user-height))
+                               (not (empty? user-sex)))
+                    (try
+                      (let [response (client/post "http://localhost:3000/registro-usuario"
+                                                  {:body (json/generate-string {:nome user-name
+                                                                                :email user-email
+                                                                                :senha user-password
+                                                                                :peso user-weight
+                                                                                :altura user-height
+                                                                                :sexo user-sex})
+                                                   :headers {"Content-Type" "application/json"
+                                                             "Accept" "application/json"}})]
+                        (if (= 200 (:status response))
+                          (println "Usuario cadastrado com sucesso!")
+                          (println "Erro ao cadastrar usuario.")))
+                      (catch Exception e
+                        (println "Já há um usuário cadastrado."))))
+                  (println "Pressione Enter para continuar...") 
+                  (read-line))))))
           (recur)))
 
       (= option 1)
@@ -164,7 +178,10 @@
         (print "Digite o nome do alimento: ") (flush)
         (let [food-name (read-line)]
           (when (not (empty? food-name))
-            (get-food-data food-name)))
+            (try
+              (get-food-data food-name)
+              (catch Exception e
+          (println "É necessário cadastrar um usuário antes de registrar alimentos.")))))
         (println "Pressione Enter para continuar...") (read-line)
         (recur))
 
@@ -174,7 +191,10 @@
         (print "Digite o nome do exercicio: ") (flush)
         (let [exercise-name (read-line)]
           (when (not (empty? exercise-name))
-            (get-exercise-data exercise-name)))
+            (try
+              (get-exercise-data exercise-name)
+              (catch Exception e
+          (println "É necessário cadastrar um usuário antes de registrar exercícios.")))))
         (println "Pressione Enter para continuar...") (read-line)
         (println " ")
         (recur))
@@ -193,7 +213,7 @@
                         foods)))
               (println "Erro ao buscar alimentos salvos.")))
           (catch Exception e
-            (println "Erro ao conectar com o servidor.")))
+            (println "É necessário cadastrar um usuário antes de visualizar alimentos.")))
         (println "Pressione Enter para continuar...") (read-line)
         (println " ")
         (recur))
@@ -215,7 +235,7 @@
                         exercises)))
               (println "Erro ao buscar exercicios salvos.")))
           (catch Exception e
-            (println "Erro ao conectar com o servidor.")))
+            (println "É necessário cadastrar um usuário antes de visualizar exercícios.")))
         (println "Pressione Enter para continuar...") (read-line)
         (recur))
 
@@ -229,7 +249,7 @@
                 (display-calorie-balance total-calorias))
               (println "Erro ao buscar total de calorias.")))
           (catch Exception e
-            (println "Erro ao conectar com o servidor.")))
+            (println "É necessário cadastrar um usuário antes de visualizar o total de calorias.")))
         (println "Pressione Enter para continuar...") (read-line)
         (recur))
 
