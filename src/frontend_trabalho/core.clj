@@ -118,8 +118,32 @@
     (= total-calorias 0)
     (println "Perfeitamente equilibrado. Como deve ser. Calorias consumidas = calorias gastas. ou seja 0")))
 
+(defn print-user-data [user]
+  (println "\nDados do usuario cadastrado:")
+  (println (str "Nome: " (or (:nome user) "N/A")))
+  (println (str "Email: " (or (:email user) "N/A")))
+  (println (str "Altura: " (or (:altura user) "N/A") " cm"))
+  (println (str "Peso: " (or (:peso user) "N/A") " libras"))
+  (println (str "Sexo: " (or (:sexo user) "N/A")))
+  (println (str "Data de cadastro: " (or (:data-criacao user) "N/A")))
+  (println))
+
+(defn check-existing-user []
+  (try
+    (let [response (client/get "http://localhost:3000/usuario" 
+                              {:as :json
+                               :headers {"Accept" "application/json; charset=utf-8"}})]
+      (if (= 200 (:status response))
+        (let [user-map (:body response)]
+          (if (map? user-map)
+            (first (vals user-map)) 
+            user-map))
+        nil))
+    (catch Exception e
+      nil)))
+
 (defn menu []
-  (println "0. Cadastrar Usuario (obrigatório antes de usar o sistema)")
+  (println "0. Cadastrar Usuario (obrigatorio antes de usar o sistema)")
   (println "1. Registrar Alimentacao")
   (println "2. Registrar Exercicio") 
   (println "3. Ver Alimentos Salvos")
@@ -134,43 +158,51 @@
     (cond
       (= option 0)
       (do
-        (println "Cadastro de Usuario")
-        (print "Digite o nome do usuario: ") (flush)
-        (let [user-name (read-line)]
-          (print "Digite o email do usuario: ") (flush)
-          (let [user-email (read-line)]
-            (print "Digite a senha do usuario: ") (flush)
-            (let [user-password (read-line)]
-              (print "Digite o peso (libras): ") (flush)
-              (let [user-weight (read-line)]
-                (print "Digite a altura (cm): ") (flush)
-                (let [user-height (read-line)]
-                  (print "Digite o sexo (M/F): ") (flush)
-                  (let [user-sex (read-line)]
-                    (when (and (not (empty? user-name))
-                               (not (empty? user-email))
-                               (not (empty? user-password))
-                               (not (empty? user-weight))
-                               (not (empty? user-height))
-                               (not (empty? user-sex)))
-                    (try
-                      (let [response (client/post "http://localhost:3000/registro-usuario"
-                                                  {:body (json/generate-string {:nome user-name
-                                                                                :email user-email
-                                                                                :senha user-password
-                                                                                :peso user-weight
-                                                                                :altura user-height
-                                                                                :sexo user-sex})
-                                                   :headers {"Content-Type" "application/json"
-                                                             "Accept" "application/json"}})]
-                        (if (= 200 (:status response))
-                          (println "Usuario cadastrado com sucesso!")
-                          (println "Erro ao cadastrar usuario.")))
-                      (catch Exception e
-                        (println "Já há um usuário cadastrado."))))
-                  (println "Pressione Enter para continuar...") 
-                  (read-line))))))
-          (recur)))
+        (let [existing-user (check-existing-user)]
+          (if existing-user
+            (do
+              (println "\nJa existe um usuario cadastrado!")
+              (print-user-data existing-user)
+              (println "Pressione Enter para continuar...")
+              (read-line))
+            (do
+              (println "Cadastro de Usuario")
+              (print "Digite o nome do usuario: ") (flush)
+              (let [user-name (read-line)]
+                (print "Digite o email do usuario: ") (flush)
+                (let [user-email (read-line)]
+                  (print "Digite a senha do usuario: ") (flush)
+                  (let [user-password (read-line)]
+                    (print "Digite o peso (libras): ") (flush)
+                    (let [user-weight (read-line)]
+                      (print "Digite a altura (cm): ") (flush)
+                      (let [user-height (read-line)]
+                        (print "Digite o sexo (M/F): ") (flush)
+                        (let [user-sex (read-line)]
+                          (when (and (not (empty? user-name))
+                                   (not (empty? user-email))
+                                   (not (empty? user-password))
+                                   (not (empty? user-weight))
+                                   (not (empty? user-height))
+                                   (not (empty? user-sex)))
+                            (try
+                              (let [response (client/post "http://localhost:3000/registro-usuario"
+                                                        {:body (json/generate-string {:nome user-name
+                                                                                    :email user-email
+                                                                                    :senha user-password
+                                                                                    :peso user-weight
+                                                                                    :altura user-height
+                                                                                    :sexo user-sex})
+                                                         :headers {"Content-Type" "application/json; charset=utf-8"
+                                                                  "Accept" "application/json; charset=utf-8"}})]
+                                (if (= 200 (:status response))
+                                  (println "Usuario cadastrado com sucesso!")
+                                  (println "Erro ao cadastrar usuario.")))
+                              (catch Exception e
+                                (println "Erro ao cadastrar usuario.")))
+                            (println "Pressione Enter para continuar...") 
+                            (read-line)))))))))))
+        (recur))
 
       (= option 1)
       (do
@@ -181,7 +213,7 @@
             (try
               (get-food-data food-name)
               (catch Exception e
-          (println "É necessário cadastrar um usuário antes de registrar alimentos.")))))
+          (println "necessario cadastrar um usuario antes de registrar alimentos.")))))
         (println "Pressione Enter para continuar...") (read-line)
         (recur))
 
@@ -194,7 +226,7 @@
             (try
               (get-exercise-data exercise-name)
               (catch Exception e
-          (println "É necessário cadastrar um usuário antes de registrar exercícios.")))))
+          (println "necessario cadastrar um usuario antes de registrar exercicios.")))))
         (println "Pressione Enter para continuar...") (read-line)
         (println " ")
         (recur))
@@ -209,11 +241,14 @@
                 (if (empty? foods)
                   (println "Nenhum alimento salvo ainda.")
                   (run! (fn [food]
-                          (println (str "- " (:alimento food) ": " (:calorias food) " calorias")))
+                          (println (str "- " (:alimento food) ": " (:calorias food) " calorias"))
+                          (when (:data-criacao food)
+                            (println (str "  Data de registro: " (:data-criacao food))))
+                          (println))
                         foods)))
               (println "Erro ao buscar alimentos salvos.")))
           (catch Exception e
-            (println "É necessário cadastrar um usuário antes de visualizar alimentos.")))
+            (println "necessario cadastrar um usuario antes de visualizar alimentos.")))
         (println "Pressione Enter para continuar...") (read-line)
         (println " ")
         (recur))
@@ -228,14 +263,17 @@
                 (if (empty? exercises)
                   (println "Nenhum exercicio salvo ainda.")
                   (run! (fn [exercise]
-                          (println (str "- " (:nome exercise)
-                                        " (original: " (:nome-original exercise) "): "
-                                        (:total-calorias exercise) " calorias totais, "
-                                        (:calorias-por-hora exercise) " cal/hora")))
+                          (println (str "- " (:nome exercise) 
+                                     " (original: " (:nome-original exercise) "): "
+                                     (:total-calorias exercise) " calorias totais, "
+                                     (:calorias-por-hora exercise) " cal/hora"))
+                          (when (:data-criacao exercise)
+                            (println (str "  Data de registro: " (:data-criacao exercise))))
+                          (println))
                         exercises)))
               (println "Erro ao buscar exercicios salvos.")))
           (catch Exception e
-            (println "É necessário cadastrar um usuário antes de visualizar exercícios.")))
+            (println "necessario cadastrar um usuario antes de visualizar exercicios.")))
         (println "Pressione Enter para continuar...") (read-line)
         (recur))
 
@@ -249,7 +287,7 @@
                 (display-calorie-balance total-calorias))
               (println "Erro ao buscar total de calorias.")))
           (catch Exception e
-            (println "É necessário cadastrar um usuário antes de visualizar o total de calorias.")))
+            (println "necessario cadastrar um usuario antes de visualizar o total de calorias.")))
         (println "Pressione Enter para continuar...") (read-line)
         (recur))
 
